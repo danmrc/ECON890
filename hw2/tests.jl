@@ -65,3 +65,9 @@ ys = collect(1:T)
 
 tt = solve_consumer(ys,a0,r,β,κ,γ,a_bar,b_bar,T)
 tt2 = solve_consumer2(ys,a0,r,β,κ,γ,a_bar,b_bar,T)
+
+## Benchmark tests, using parametrization above.
+
+benchop = @benchmark solve_consumer(ys,a0,r,β,κ,γ,a_bar,b_bar,T)
+benchfoc = @benchmark solve_consumer2(ys,a0,r,β,κ,γ,a_bar,b_bar,T)
+
