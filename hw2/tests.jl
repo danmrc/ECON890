@@ -1,6 +1,6 @@
 include("functions.jl")
 
-using Random
+using Random, BenchmarkTools
 
 Random.seed!(1539)
 

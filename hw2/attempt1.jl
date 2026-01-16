@@ -1,4 +1,4 @@
-using Plots, Optim, NLsolve
+using Plots, Optim, NLsolve, CSV, DataFrames, BenchmarkTools
 
 function u(c,γ)
 
@@ -14,7 +14,20 @@ function u(c,γ)
 
 end
 
-uprime(c,γ) = γ == 1 ? 1/c : c^(-γ)
+function uprime(c,γ)
+
+    if c < 0
+        return -Inf
+    end
+
+    if γ == 1
+        return 1/c
+    else
+        return c^(-γ)
+    end
+
+end
+
 
 function utility_to_maximize(as,ys,r,β,κ,γ,a_bar,b_bar,T)
 
@@ -60,13 +73,36 @@ end
 function solve_consumer2(ys,a0,r,β,κ,γ,a_bar,b_bar,T)
 
     sol = nlsolve(a->build_focs([a0;a[1:T]],ys,r,β,κ,γ,a_bar,a[T+1],T),fill(0.01,T+1), autodiff = :forward)
-    assets = [a0;sol.zero[1:(T+1)]]
+    assets = [a0;sol.zero[1:(T)]]
     assets[T+1] = exp(assets[T+1])
     consumption = (1+r)*assets[1:T] + ys - assets[2:(T+1)]
 
     return solution_cons(assets,consumption,sol)
 
 end
+
+function obj_fun(ys,as,r,β,κ,γ,a_bar,b_bar,T)
+
+    a0 = as[1]
+    sol = solve_consumer(ys,a0,r,β,κ,γ,a_bar,b_bar,T)
+
+    Δ_as = as - sol.assets
+
+    return Δ_as'Δ_as
+
+end
+
+function obj_fun2(ys,as,r,β,κ,γ,a_bar,b_bar,T)
+
+    a0 = as[1]
+    sol = solve_consumer2(ys,a0,r,β,κ,γ,a_bar,b_bar,T)
+
+    Δ_as = as - sol.assets
+
+    return Δ_as'Δ_as
+
+end
+
 
 r = 0.05
 a_bar = 1
@@ -80,6 +116,40 @@ ys = collect(1:T)
 
 tt = solve_consumer(ys,0,r,β,κ,γ,a_bar,b_bar,T)
 tt2 = solve_consumer2(ys,0,r,β,κ,γ,a_bar,b_bar,T)
+
+data = CSV.read("summary_stats.csv", DataFrame, missingstring = ["NA"])
+
+assets = data.assets/10_000
+income = data.inc/10_000
+income = income[1:5]
+
+obj_fun(income,assets,r,β,κ,γ,a_bar,b_bar,nrow(data)-1)
+obj_fun2(income,assets,r,β,κ,γ,a_bar,b_bar,nrow(data)-1)
+
+
+# order:κ,γ,a_bar
+
+θ0 = [0.1;2;assets[6]*0.1]
+lw = [0;1;0.1]
+up = [1;Inf;Inf]
+
+est = optimize(θ->obj_fun(income,assets,r,1/(1+r),θ[1],θ[2],θ[3],b_bar,nrow(data)-1),lw,up,θ0,Fminbox(LBFGS()))
+est2 = optimize(θ->obj_fun2(income,assets,r,1/(1+r),θ[1],θ[2],θ[3],b_bar,nrow(data)-1),lw,up,θ0,Fminbox(LBFGS()))
+
+
+
+# order:β,κ,γ,a_bar
+
+θ0 = [0.1;0;2;assets[6]*0.1]
+lw = [0;0;1;0.1]
+up = [1;1;Inf;Inf]
+
+est = optimize(θ->obj_fun(income,assets,r,θ[1],θ[2],θ[3],θ[4],b_bar,nrow(data)-1),lw,up,θ0,Fminbox(LBFGS()))
+
+
+
+
+
 
 
 as = zeros(T+1)

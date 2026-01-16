@@ -153,6 +153,7 @@ vals_networth <- networth_per_age_median$coefficients
 min_age <- which(names(vals_networth) == 21)
 max_age <- which(names(vals_networth) == 85)
 
+leftover <- mean(vals_networth[max_age:length(vals_networth)])
 vals_networth <- vals_networth[min_age:max_age]
 
 n_blocks <- 5
@@ -161,7 +162,7 @@ block_size <- length_data/n_blocks
 blocks_beg <- seq(1,65,by=block_size)
 blocks_end <- blocks_beg + block_size-1
 
-avg_median_assets <- rep(NA,n_blocks)
+avg_median_assets <- rep(NA,n_blocks+1)
 
 for(i in 1:n_blocks){
   b <- blocks_beg[i]
@@ -169,6 +170,10 @@ for(i in 1:n_blocks){
   
   avg_median_assets[i] <- mean(vals_networth[b:en])
 }
+
+avg_median_assets[n_blocks+1] <- leftover
+
+plot(avg_median_assets,type = "l")
 
 ## Same exercise, but for income
 
@@ -203,6 +208,10 @@ for(i in 1:n_blocks){
 }
 
 plot(avg_median_income, type = "l")
+
+# align vectors
+
+avg_median_income <- c(avg_median_income,NA)
 
 df_sum <- data.frame(assets = avg_median_assets,inc = avg_median_income)
 

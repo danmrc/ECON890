@@ -18,9 +18,21 @@ function u(c,γ)
 end
 
 """
-Derivative of CRRA. See help for CRRA utility. No enforcing for negative arguments
+Derivative of CRRA. See help for CRRA utility.
 """
-uprime(c,γ) = γ == 1 ? 1/c : c^(-γ)
+function uprime(c,γ)
+
+    if c < 0
+        return -Inf
+    end
+
+    if γ == 1
+        return 1/c
+    else
+        return c^(-γ)
+    end
+
+end
 
 
 """
@@ -95,5 +107,34 @@ function solve_consumer2(ys,a0,r,β,κ,γ,a_bar,b_bar,T)
     consumption = (1+r)*assets[1:T] + ys - assets[2:(T+1)]
 
     return solution_cons(assets,consumption,sol)
+
+end
+
+"""
+Very basic quadratic objective function (GMM with identity weights) that targets the asset values (only) to get an object function (hence the name) to estimate the parameters. Estimating β will be tricky, but κ,γ and a_bar can be estimated. This uses the optimization version of the solution of the consumer problem.
+"""
+function obj_fun(ys,as,r,β,κ,γ,a_bar,b_bar,T)
+
+    a0 = as[1]
+    sol = solve_consumer(ys,a0,r,β,κ,γ,a_bar,b_bar,T)
+
+    Δ_as = as - sol.assets
+
+    return Δ_as'Δ_as
+
+end
+
+
+"""
+Very basic quadratic objective function (GMM with identity weights) that targets the asset values (only) to get an object function (hence the name) to estimate the parameters. Estimating β will be tricky, but κ,γ and a_bar can be estimated. This uses the foc version of the solution of the consumer problem.
+"""
+function obj_fun2(ys,as,r,β,κ,γ,a_bar,b_bar,T)
+
+    a0 = as[1]
+    sol = solve_consumer2(ys,a0,r,β,κ,γ,a_bar,b_bar,T)
+
+    Δ_as = as - sol.assets
+
+    return Δ_as'Δ_as
 
 end
